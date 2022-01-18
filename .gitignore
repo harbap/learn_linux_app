@@ -1,0 +1,6 @@
+*.vscode
+*.d
+*.o
+*.siproject
+linux_app_arm
+linux_app
