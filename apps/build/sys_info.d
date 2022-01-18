@@ -1,48 +1,79 @@
-build/sys_info.o: sys_info.c /usr/include/stdc-predef.h \
- /usr/include/stdio.h /usr/include/features.h \
- /usr/include/x86_64-linux-gnu/sys/cdefs.h \
- /usr/include/x86_64-linux-gnu/bits/wordsize.h \
- /usr/include/x86_64-linux-gnu/gnu/stubs.h \
- /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
- /usr/lib/gcc/x86_64-linux-gnu/5/include/stddef.h \
- /usr/include/x86_64-linux-gnu/bits/types.h \
- /usr/include/x86_64-linux-gnu/bits/typesizes.h /usr/include/libio.h \
- /usr/include/_G_config.h /usr/include/wchar.h \
- /usr/lib/gcc/x86_64-linux-gnu/5/include/stdarg.h \
- /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
- /usr/include/x86_64-linux-gnu/bits/sys_errlist.h \
- /usr/include/x86_64-linux-gnu/bits/stdio.h \
- /usr/include/x86_64-linux-gnu/bits/stdio2.h /usr/include/stdlib.h \
- /usr/include/x86_64-linux-gnu/bits/waitflags.h \
- /usr/include/x86_64-linux-gnu/bits/waitstatus.h /usr/include/endian.h \
- /usr/include/x86_64-linux-gnu/bits/endian.h \
- /usr/include/x86_64-linux-gnu/bits/byteswap.h \
- /usr/include/x86_64-linux-gnu/bits/byteswap-16.h \
- /usr/include/x86_64-linux-gnu/sys/types.h /usr/include/time.h \
- /usr/include/x86_64-linux-gnu/sys/select.h \
- /usr/include/x86_64-linux-gnu/bits/select.h \
- /usr/include/x86_64-linux-gnu/bits/sigset.h \
- /usr/include/x86_64-linux-gnu/bits/time.h \
- /usr/include/x86_64-linux-gnu/bits/select2.h \
- /usr/include/x86_64-linux-gnu/sys/sysmacros.h \
- /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h /usr/include/alloca.h \
- /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h \
- /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
- /usr/include/x86_64-linux-gnu/bits/stdlib.h /usr/include/unistd.h \
- /usr/include/x86_64-linux-gnu/bits/posix_opt.h \
- /usr/include/x86_64-linux-gnu/bits/environments.h \
- /usr/include/x86_64-linux-gnu/bits/confname.h /usr/include/getopt.h \
- /usr/include/x86_64-linux-gnu/bits/unistd.h \
- /usr/include/x86_64-linux-gnu/sys/utsname.h \
- /usr/include/x86_64-linux-gnu/bits/utsname.h \
- /usr/include/x86_64-linux-gnu/sys/sysinfo.h /usr/include/linux/kernel.h \
- /usr/include/linux/sysinfo.h /usr/include/linux/types.h \
- /usr/include/x86_64-linux-gnu/asm/types.h \
- /usr/include/asm-generic/types.h /usr/include/asm-generic/int-ll64.h \
- /usr/include/x86_64-linux-gnu/asm/bitsperlong.h \
- /usr/include/asm-generic/bitsperlong.h /usr/include/linux/posix_types.h \
- /usr/include/linux/stddef.h \
- /usr/include/x86_64-linux-gnu/asm/posix_types.h \
- /usr/include/x86_64-linux-gnu/asm/posix_types_64.h \
- /usr/include/asm-generic/posix_types.h /usr/include/xlocale.h \
- /usr/include/x86_64-linux-gnu/sys/time.h test_api.h
+build/sys_info.o: sys_info.c \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/stdc-predef.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/stdio.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/libc-header-start.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/features.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/sys/cdefs.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/wordsize.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/long-double.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/gnu/stubs.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/gnu/stubs-hard.h \
+ /workdir/gcc-arm-linux-gnueabi/lib/gcc/arm-linux-gnueabihf/7.3.1/include/stddef.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/typesizes.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types/__FILE.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types/FILE.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/libio.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/_G_config.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types/__mbstate_t.h \
+ /workdir/gcc-arm-linux-gnueabi/lib/gcc/arm-linux-gnueabihf/7.3.1/include/stdarg.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/stdio_lim.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/sys_errlist.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/stdio.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/stdlib.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/waitflags.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/waitstatus.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/floatn.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/sys/types.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types/clock_t.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types/clockid_t.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types/time_t.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types/timer_t.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/stdint-intn.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/endian.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/endian.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/byteswap.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/byteswap-16.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/uintn-identity.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/sys/select.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/select.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types/sigset_t.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types/__sigset_t.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types/struct_timeval.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types/struct_timespec.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/sys/sysmacros.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/sysmacros.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/pthreadtypes.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/thread-shared-types.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/pthreadtypes-arch.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/alloca.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/stdlib-bsearch.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/stdlib-float.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/unistd.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/posix_opt.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/environments.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/confname.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/getopt_posix.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/getopt_core.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/sys/utsname.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/utsname.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/sys/sysinfo.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/linux/kernel.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/linux/sysinfo.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/linux/types.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/asm/types.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/asm-generic/int-ll64.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/asm/bitsperlong.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/asm-generic/bitsperlong.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/linux/posix_types.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/linux/stddef.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/asm/posix_types.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/asm-generic/posix_types.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/time.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/time.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types/struct_tm.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types/struct_itimerspec.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types/locale_t.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/bits/types/__locale_t.h \
+ /workdir/gcc-arm-linux-gnueabi/arm-linux-gnueabihf/libc/usr/include/sys/time.h \
+ test_api.h

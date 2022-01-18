@@ -1,4 +1,4 @@
-CROSS_COMPILE		?= 
+CROSS_COMPILE		?= arm-linux-gnueabihf-
 
 CC		:= $(CROSS_COMPILE)gcc
 CXX 	:= $(CROSS_COMPILE)g++
@@ -9,9 +9,12 @@ obj 	:= build
 CC_FLAG	:= -g -O2 -Wall -MD -I./ -I./include -I../lib/include  -I../middle/include -I/opt/i.mx/alsa-lib/include
 LD_FLAG := -g -O2 -lpthread -lrt -lm -L../lib -L/opt/i.mx/alsa-lib/lib -L../middle
 
+ifeq ($(CROSS_COMPILE),arm-linux-gnueabihf-)
+TARGET  := linux_app_arm
+else
 TARGET 	:= linux_app 
-
-SOURCE  += main.o test_fileio.o sys_info.o test_signal.o
+endif
+SOURCE  += main.o test_fileio.o sys_info.o test_signal.o test_framebuffer.o
 
 OBJECT 	:= $(patsubst %c,%o,$(SOURCE))
 OBJ 	:= $(addprefix $(obj)/,$(OBJECT))
@@ -32,4 +35,5 @@ app_install:
 clean:
 	rm -rf $(obj)/*.o
 	rm -rf $(obj)/*.d
-	rm -rf $(TARGET)
+	rm -rf linux_app
+	rm -rf linux_app_arm
