@@ -4,3 +4,4 @@
 *.siproject
 linux_app_arm
 linux_app
+lib/jpeg-9b/*

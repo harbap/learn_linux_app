@@ -9,6 +9,7 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <math.h>
+#include <jpeglib.h>
 #include "test_frambuffer.h"
 
 typedef struct{
@@ -30,6 +31,12 @@ typedef struct{
     unsigned int clr_used; 
     unsigned int clr_omportant;
 }__attribute__((packed))bmp_info_header;
+
+typedef struct bgr888_color{
+    unsigned char blue;
+    unsigned char green;
+    unsigned char red;
+}__attribute__((packed))bgr888_t;
 
 static int framb_fd = 0;
 static short lcd_width = 0,lcd_height = 0;
@@ -222,7 +229,7 @@ int read_bmp_file(const char *fname,unsigned char **imgdata,bmp_info_header *inf
     close(fd);
     return 0;
 }
-int lcd_show_image(unsigned short x,unsigned short y,unsigned short w,unsigned short h,unsigned char *data,unsigned short bpp,unsigned char dir)
+int lcd_show_bmp_image(unsigned short x,unsigned short y,unsigned short w,unsigned short h,unsigned char *data,unsigned short bpp,unsigned char dir)
 {
     short i = 0,j = 0;
     int off = 0,idx = 0;
@@ -233,7 +240,7 @@ int lcd_show_image(unsigned short x,unsigned short y,unsigned short w,unsigned s
     else
         idx = w * h * bpp / 8 - 1;
     w -= 1;
-    printf("off = %d x = %d y = %d w = %d h = %d dir = %d\n",off,x,y,w,h,dir);
+ //   printf("off = %d x = %d y = %d w = %d h = %d dir = %d\n",off,x,y,w,h,dir);
     if(bpp == 24){
         for(j = 0;j < h;j ++){
             for(i = w;i >= 0;i --){
@@ -293,20 +300,20 @@ int show_bmp_image(unsigned short x,unsigned short y,char *fname,unsigned char i
     unsigned char *imgdata = NULL;
     bmp_info_header info;
     int ret = 0;
-    printf("show_bmp_image...\n");
+  //  printf("show_bmp_image...\n");
     ret = read_bmp_file(fname,&imgdata,&info);
     if(ret < 0){
         return ret;
     }
-    printf("lcd_show_image...\n");
+ //   printf("lcd_show_image...\n");
     if(isCenter){
         x = (lcd_width - info.width)/2;
         y = (lcd_height - info.height)/2;
     }
     if(info.height > 0)
-        lcd_show_image(x,y,info.width,info.height,imgdata,info.bpp,1);      //倒向位图
+        lcd_show_bmp_image(x,y,info.width,info.height,imgdata,info.bpp,1);      //倒向位图
     else
-        lcd_show_image(x,y,info.width,info.height,imgdata,info.bpp,0);      //正向位图
+        lcd_show_bmp_image(x,y,info.width,info.height,imgdata,info.bpp,0);      //正向位图
     free(imgdata);
     return 0;
 }
@@ -314,11 +321,124 @@ int show_bmp_image(unsigned short x,unsigned short y,char *fname,unsigned char i
 void set_rgb_color(unsigned char *data,int len,unsigned short color)
 {
     int i;
-    unsigned short *p = (unsigned char*)data;
+    unsigned short *p = (unsigned short*)data;
     for(i = 0;i < len;i += 2){
         *p = color;
         p++;
     }
+}
+int lcd_show_rgbimage(unsigned short x,unsigned short y,unsigned short w,unsigned short h,unsigned char *imgdata)
+{
+    short i = 0,j = 0;
+    int off = 0,idx = 0;
+
+    if(x + w > lcd_width){
+        return -1;
+    }
+    if(y + h > lcd_width){
+        return -2;
+    }
+    off = y * lcd_width + x;
+    w -= 1;
+   // printf("off = %d w = %d h = %d\n",off,w,h);
+    for(j = 0;j < h;j ++){
+        for(i = 0;i <= w;i ++){                   //    B               G                      R
+            *(unsigned int*)(pFrambuff + off + i) = imgdata[idx] | imgdata[idx+1] << 8 | imgdata[idx+2] << 16;
+            idx += 3;
+        }
+        off += lcd_width;
+    }
+    return 0;
+}
+int read_jpeg_image(char *fname,unsigned char **imgdata,int *width,int *height)
+{
+    struct jpeg_decompress_struct cinfo;
+    struct jpeg_error_mgr jerr;
+    bgr888_t *jpeg_line_buff = NULL;
+    FILE* fp = NULL;
+    int scale= 0, scalew = 0,scaleh = 0,i=0,idx = 0;
+
+    printf("==============read_jpeg_imagen==================\n");
+    //banding err handled function
+    cinfo.err = jpeg_std_error(&jerr);
+    fp = fopen(fname,"r");
+    if(fp == NULL){
+        printf("read %s failed\n",fname);
+        return -1;
+    }
+    //创建解码对象
+    jpeg_create_decompress(&cinfo);
+    //指定图像信息
+    jpeg_stdio_src(&cinfo,fp);
+    //读取图像信息
+    jpeg_read_header(&cinfo,TRUE);
+    printf("pic size:%d * %d \n",cinfo.image_width,cinfo.image_height);
+    cinfo.scale_num = 1;
+    cinfo.scale_denom = 1;
+    if(cinfo.image_width > lcd_width||cinfo.image_height > lcd_height){
+        scalew = cinfo.image_width / lcd_width;
+        if(cinfo.image_width % lcd_width != 0){
+            scalew += 1;
+        }
+        scaleh = cinfo.image_height / lcd_height;
+        if(cinfo.image_height % lcd_height != 0){
+            scaleh += 1;
+        }
+        scale = scalew > scaleh ? scalew : scaleh;
+        cinfo.scale_denom = scale;
+
+    }
+    //设置解码参数
+    cinfo.out_color_space = JCS_RGB;
+    jpeg_start_decompress(&cinfo);
+    printf("output size:%d * %d  scale_demom:%d \n",cinfo.output_width,cinfo.output_height,cinfo.scale_denom);
+    jpeg_line_buff = malloc(cinfo.output_components * cinfo.output_width);
+    idx = cinfo.output_components * cinfo.output_width*cinfo.output_height;
+   // printf("idx = %d\n",idx);
+    *imgdata = (unsigned char*)malloc(idx);
+    if(jpeg_line_buff == NULL || *imgdata == NULL){
+        printf("malloc error!\n");
+        return -2;
+    }
+    *width = cinfo.output_width;
+    *height = cinfo.output_height;
+    idx = 0;
+    while(cinfo.output_scanline < cinfo.output_height){
+        jpeg_read_scanlines(&cinfo,(unsigned char**)&jpeg_line_buff,1);
+        //printf("lines = %d\n",cinfo.output_scanline);
+        //将BGR888 转换为RGB888
+        for(i = 0;i < cinfo.output_width;i++){
+             (*imgdata)[idx++] = jpeg_line_buff[i].red;
+             (*imgdata)[idx++] = jpeg_line_buff[i].green;
+             (*imgdata)[idx++] = jpeg_line_buff[i].blue;
+        }
+    }
+    //printf("finish decompress\n");
+
+    jpeg_finish_decompress(&cinfo);
+ 
+    jpeg_destroy_decompress(&cinfo);
+    fclose(fp);
+
+    return 0;
+}
+
+int lcd_display_jpeg(unsigned short x,unsigned short y,char *fname,lcd_align_t align)
+{
+    int w = 0,h = 0,ret = 0;
+    unsigned char *imgdata = NULL;
+    ret = read_jpeg_image(fname,&imgdata,&w,&h);
+    if(ret != 0){
+        return ret;
+    }
+    //printf("w = %d h = %d\n",w,h);
+    if(align == align_center){
+        x = (lcd_width - w)/2;
+        y = (lcd_height - h)/2;
+    }
+    lcd_show_rgbimage(x,y,w,h,imgdata);
+    free(imgdata);
+    return 0;
 }
 
 void lcd_base_ui_test(void)
@@ -326,7 +446,7 @@ void lcd_base_ui_test(void)
     int i = 1,cnt = 10;
     unsigned char align = 0;
     char fname[20] = {0};
-    unsigned char img[10000] = {0};
+    
     lcd_clearn(0xFFFFFF);
     lcd_draw_line(5,100,1,200,0xFF0000);
     lcd_draw_line(105,0,0,200,0xFF0000);
@@ -341,6 +461,10 @@ void lcd_base_ui_test(void)
     lcd_draw_rectangle(150,60,180,100,0xFF22F0,1);
     lcd_draw_rectangle(250,60,300,110,0xFF22F0,1);
     sleep(1);
+
+  #if 1  
+    #if 0
+    unsigned char img[10000] = {0};
     set_rgb_color(img,sizeof(img),0xF800);
     lcd_show_image(600,0,20,20,img,16,1);
     set_rgb_color(img,sizeof(img),0x07E0);
@@ -350,19 +474,33 @@ void lcd_base_ui_test(void)
     sprintf(fname,"./img/%d.bmp",10);    
     show_bmp_image(0,0,fname,0);
     sleep(5);
+    #endif 
     while(cnt --){
-    for(i = 1; i <= 15;i ++){
-        sprintf(fname,"./img/%d.bmp",i);
+    for(i = 1; i <= 22;i ++){
+        if(i >= 16)
+            sprintf(fname,"./img/%d.jpg",i);
+        else
+            sprintf(fname,"./img/%d.bmp",i);
         if(i >= 8){
             align = 1;
             lcd_clearn(0xFFFFFF);
         }else{
             align = 0;
         }
-        show_bmp_image(0,0,fname,align);
+        if(i >= 16)
+            lcd_display_jpeg(0,0,fname,align_center);
+        else
+            show_bmp_image(0,0,fname,align);
         sleep(2);
     }
     }
+#elif 0
+    for(i = 16;i <= 22;i++){
+        sprintf(fname,"./img/%d.jpg",i); 
+        lcd_display_jpeg(0,0,fname,align_center);  
+        sleep(2);
+    }  
+#endif
 }
 void lcd_set_bklight_alwaslon(void)
 {
