@@ -17,7 +17,7 @@ old_library='libpng16.a'
 inherited_linker_flags=''
 
 # Libraries that this one depends upon.
-dependency_libs=' -lz -lm'
+dependency_libs=' -L/opt/i.mx/thirdparty/zlib_lib -L/opt/i.mx/thirdparty/zlib_lib/lib -lz -lm'
 
 # Names of additional weak libraries provided by this library
 weak_library_names=''

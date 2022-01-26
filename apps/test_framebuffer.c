@@ -10,6 +10,7 @@
 #include <string.h>
 #include <math.h>
 #include <jpeglib.h>
+#include <png.h>
 #include "test_frambuffer.h"
 
 typedef struct{
@@ -339,10 +340,9 @@ int lcd_show_rgbimage(unsigned short x,unsigned short y,unsigned short w,unsigne
         return -2;
     }
     off = y * lcd_width + x;
-    w -= 1;
    // printf("off = %d w = %d h = %d\n",off,w,h);
     for(j = 0;j < h;j ++){
-        for(i = 0;i <= w;i ++){                   //    B               G                      R
+        for(i = 0;i < w;i ++){                   //    B               G                      R
             *(unsigned int*)(pFrambuff + off + i) = imgdata[idx] | imgdata[idx+1] << 8 | imgdata[idx+2] << 16;
             idx += 3;
         }
@@ -440,7 +440,96 @@ int lcd_display_jpeg(unsigned short x,unsigned short y,char *fname,lcd_align_t a
     free(imgdata);
     return 0;
 }
+int read_png_image(char *fname,unsigned char **imgdata,int *w,int *h)
+{
+    png_structp png_ptr = NULL;
+    png_infop info_ptr = NULL;
+    unsigned int imgw = 0,imgh = 0,i,row_bytes = 0;
+    png_bytepp row_pointers = NULL;
+    unsigned char bitdep = 0,color_type = 0;
+    FILE *fp = NULL;
 
+    fp = fopen(fname,"r");
+    if(fp == NULL){
+        printf("open %s failed\n",fname);
+        return -1;
+    }
+    png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,NULL,NULL,NULL);
+    if(png_ptr == NULL){
+        fclose(fp);
+        return -2;
+    }
+    info_ptr = png_create_info_struct(png_ptr);
+    if(info_ptr == NULL){
+        png_destroy_read_struct(&png_ptr,NULL,NULL);
+        fclose(fp);
+        return -2;
+    }
+    //设置错误返回点
+    if(setjmp(png_jmpbuf(png_ptr))){
+        png_destroy_read_struct(&png_ptr,NULL,NULL);
+        fclose(fp);
+        return -3;
+    }
+    //指定数据源
+    png_init_io(png_ptr,fp);
+    //读取png文件
+    png_read_png(png_ptr,info_ptr,(PNG_TRANSFORM_STRIP_16|PNG_TRANSFORM_BGR|PNG_TRANSFORM_EXPAND|PNG_TRANSFORM_PACKING),NULL);
+    imgw = png_get_image_width(png_ptr,info_ptr);
+    imgh = png_get_image_height(png_ptr,info_ptr);
+    printf("image size: %d * %d \n",imgw,imgh);
+    //判断png数据，是不是RGB888
+    bitdep = png_get_channels(png_ptr,info_ptr);
+  // printf("channel count: %d\n",bitdep);
+    bitdep = png_get_bit_depth(png_ptr,info_ptr);
+    color_type = png_get_color_type(png_ptr,info_ptr);
+   // printf("bit depth: %d color_type:%d \n",bitdep,color_type);
+    if(bitdep != 8||(color_type != PNG_COLOR_TYPE_RGB)){
+        printf("error image is not RGB888 !\n");
+        png_destroy_read_struct(&png_ptr,&info_ptr,NULL);
+        fclose(fp);
+        return -4;
+    }
+ //   png_set_sCAL(png_ptr,info_ptr,1,255.0,140.0);  //不清楚该函数用处
+ //   imgw = png_get_image_width(png_ptr,info_ptr);
+ //   imgh = png_get_image_height(png_ptr,info_ptr);
+ //   printf("image size: %d * %d \n",imgw,imgh);
+    //读取解码后的数据
+    row_bytes = png_get_rowbytes(png_ptr,info_ptr);
+    row_pointers = png_get_rows(png_ptr,info_ptr);
+    *imgdata = (unsigned char*)malloc(imgw*imgh*3);
+
+   // imgh = 2;
+   for(i = 0;i < imgh;i++){
+       memcpy(*(imgdata) + (row_bytes * i),row_pointers[i],row_bytes);
+   }
+    *w = imgw;
+    *h = imgh;
+
+    //结束、销毁/释放内存
+    png_destroy_read_struct(&png_ptr,&info_ptr,NULL);
+    
+    fclose(fp);
+
+    return 0;
+}
+int lcd_display_png(unsigned short x,unsigned short y,char *fname,lcd_align_t align)
+{
+    int w = 0,h = 0,ret = 0;
+    unsigned char *imgdata = NULL;
+    ret = read_png_image(fname,&imgdata,&w,&h);
+    if(ret != 0){
+        return ret;
+    }
+    if(align == align_center){
+        x = (lcd_width - w)/2;
+        y = (lcd_height - h)/2;
+    }
+    printf("lcd_show_rgbimage\n");
+    lcd_show_rgbimage(x,y,w,h,imgdata);
+    free(imgdata);
+    return 0;
+}
 void lcd_base_ui_test(void)
 {
     int i = 1,cnt = 10;
@@ -462,7 +551,7 @@ void lcd_base_ui_test(void)
     lcd_draw_rectangle(250,60,300,110,0xFF22F0,1);
     sleep(1);
 
-  #if 1  
+  #if 1
     #if 0
     unsigned char img[10000] = {0};
     set_rgb_color(img,sizeof(img),0xF800);
@@ -476,8 +565,10 @@ void lcd_base_ui_test(void)
     sleep(5);
     #endif 
     while(cnt --){
-    for(i = 1; i <= 22;i ++){
-        if(i >= 16)
+    for(i = 1; i <= 25;i ++){
+        if(i >= 24){
+            sprintf(fname,"./img/%d.png",i);
+        }else if(i >= 16 && i < 24)
             sprintf(fname,"./img/%d.jpg",i);
         else
             sprintf(fname,"./img/%d.bmp",i);
@@ -487,7 +578,9 @@ void lcd_base_ui_test(void)
         }else{
             align = 0;
         }
-        if(i >= 16)
+        if(i >= 24){
+            lcd_display_png(0,0,fname,align_center);
+        }else if(i >= 16 && i < 24)
             lcd_display_jpeg(0,0,fname,align_center);
         else
             show_bmp_image(0,0,fname,align);
@@ -500,6 +593,11 @@ void lcd_base_ui_test(void)
         lcd_display_jpeg(0,0,fname,align_center);  
         sleep(2);
     }  
+#elif 0
+    lcd_display_png(0,0,"./img/pngbar.png",align_center);
+    sleep(2);
+    lcd_display_png(0,0,"./img/24.png",align_center);
+    sleep(2);
 #endif
 }
 void lcd_set_bklight_alwaslon(void)
