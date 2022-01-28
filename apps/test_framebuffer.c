@@ -11,6 +11,11 @@
 #include <math.h>
 #include <jpeglib.h>
 #include <png.h>
+#include <ft2build.h>
+#include <math.h>
+#include <stdarg.h>
+#include <wchar.h>
+#include "freetype/freetype.h"
 #include "test_frambuffer.h"
 
 typedef struct{
@@ -39,6 +44,22 @@ typedef struct bgr888_color{
     unsigned char red;
 }__attribute__((packed))bgr888_t;
 
+typedef enum{
+    FONT_SONG = 0,
+    FONT_KAI = 1,
+}FontType_t;
+typedef struct{
+    FontType_t type;
+    unsigned char font_width;
+    unsigned char font_height;
+}Font_t;
+
+static FT_Library library;
+static FT_Face face;
+static int font_width =30,font_height = 30;
+static Font_t fonts_g = {FONT_SONG,30,30};
+static unsigned int front_color = 0xFF0000,back_color = 0;
+static unsigned short g_x = 0,g_y = 0;
 static int framb_fd = 0;
 static short lcd_width = 0,lcd_height = 0;
 static unsigned int *pFrambuff = NULL;        //maped screen addr
@@ -530,6 +551,147 @@ int lcd_display_png(unsigned short x,unsigned short y,char *fname,lcd_align_t al
     free(imgdata);
     return 0;
 }
+void uninit_freetype()
+{
+    FT_Done_Face(face);
+    FT_Done_FreeType(library);
+}
+int init_freetype()
+{
+    FT_Error error;
+    FT_Vector pen;
+    FT_Matrix matrix;
+    int angle = 0;
+    float rad;      //旋转角度
+    char font_name[50] = {0},*prefix = "/usr/share/fonts/";
+
+    /*FreeType初始化*/
+    FT_Init_FreeType(&library);
+    /*加载face对象*/
+    switch(fonts_g.type){
+        case FONT_SONG:
+        sprintf(font_name,"%s%s",prefix,"simsun.ttc");
+        break;
+        case FONT_KAI:
+        sprintf(font_name,"%s%s",prefix,"simkai.ttf");
+        break;
+    }
+    error = FT_New_Face(library,font_name,0,&face);
+    if(error != 0){
+        printf("FT New face error:%d\n",error);
+        return -1;
+    }
+    /*设置原点坐标*/
+    pen.x = 0;
+    pen.y = 0;
+    rad = (1.0 * angle / 180.0) * 3.14;
+    /*水平方向显示 斜体角度...*/
+    matrix.xx = (FT_Fixed)(cos(rad) * 0x10000L);
+    matrix.xy = (FT_Fixed)(sin(rad) * 0x10000L);
+    matrix.yx = (FT_Fixed)( 0 * 0x10000L);
+    matrix.yy = (FT_Fixed)( 1 * 0x10000L);
+    /**/
+    FT_Set_Transform(face,&matrix,&pen);
+    /*设置字体大小*/
+    FT_Set_Pixel_Sizes(face,fonts_g.font_width,fonts_g.font_height);
+    return 0;
+}
+void lcd_set_font_color(unsigned int color)
+{
+    front_color = color;
+}
+int lcd_set_font_type(Font_t type)
+{
+    fonts_g = type;
+    return 0;
+}
+void lcd_set_font_size(unsigned char width,unsigned char height)
+{
+    fonts_g.font_width = width;
+    fonts_g.font_height = height;
+}
+static void lcd_putch(unsigned char ch)
+{
+    FT_GlyphSlot slot = face->glyph;
+    static unsigned char last_ch = 0;
+    unsigned short w = 0,h = 0;
+    unsigned long char_code = 0;
+    int i,j;
+
+    if(last_ch & 0x80) {
+        char_code = (last_ch << 8)|ch;
+    }else if(ch & 0x80) {
+        last_ch = ch;
+        return;
+    }else{
+        w= font_width;
+        h = font_height;
+        if(ch == '\n'){
+            g_y += h;
+            return;
+        }else if(ch == '\r'){
+            g_x = 0;
+            return;
+        }
+        if(g_x + w > lcd_width){
+            g_x = 0;
+            g_y += h;
+            if(g_y + h > lcd_height){
+                return;
+            }            
+        }
+        char_code = ch;
+        printf("char_code:%04lx\n",char_code);
+        FT_Load_Char(face,char_code,FT_LOAD_RENDER);
+        printf("top:%d left:%d w:%d h:%d ad:x=%ld y=%ld\n",slot->bitmap_top,slot->bitmap_left,slot->bitmap.width,slot->bitmap.rows,slot->advance.x,slot->advance.y);
+        for(i = 0;i < slot->bitmap.rows;i++){
+            for(j = 0;j < slot->bitmap.width;j++){
+                if(slot->bitmap.buffer[j + i * slot->bitmap.width])
+                    printf("*");
+                else
+                    printf(".");
+            }
+            printf("\n");
+        }
+        printf("\n");
+    }
+}
+void lcd_gotxy(unsigned short x,unsigned short y)
+{
+    g_x = x;
+    g_y = y;
+}
+int lcd_dispalay_string(unsigned short x,unsigned short y,char *str)
+{
+    int len = 0,i = 0;
+
+    len = strlen(str);
+    lcd_gotxy(x,y);
+    for(i = 0;i < len;i++){
+        printf("%c ",str[i]);
+        lcd_putch(str[i]);
+    } 
+
+    return 0;
+}
+int lcd_display(unsigned short x,unsigned short y,char *str,...)
+{
+    char tmp[256] = {0};
+    va_list args;
+
+    va_start(args, str);
+    vsprintf(tmp,str,args);
+    va_end(args);
+    lcd_dispalay_string(x,y,tmp);
+    return 0;
+}
+int lcd_printf(char *str, ...)
+{
+    return 0;
+}
+
+
+
 void lcd_base_ui_test(void)
 {
     int i = 1,cnt = 10;
@@ -551,7 +713,7 @@ void lcd_base_ui_test(void)
     lcd_draw_rectangle(250,60,300,110,0xFF22F0,1);
     sleep(1);
 
-  #if 1
+  #if 0
     #if 0
     unsigned char img[10000] = {0};
     set_rgb_color(img,sizeof(img),0xF800);
@@ -598,6 +760,17 @@ void lcd_base_ui_test(void)
     sleep(2);
     lcd_display_png(0,0,"./img/24.png",align_center);
     sleep(2);
+#elif 1    
+    lcd_clearn(0xFFFFFF);
+    printf("init free type...\n");
+    cnt = init_freetype();
+    if(cnt == 0) {
+        printf("FreeType Init ok...\n");
+    }else{
+        printf("FreeType Init failed...\n");return;
+    }
+    lcd_display(0,0,"abcefABCDEF");
+    uninit_freetype();
 #endif
 }
 void lcd_set_bklight_alwaslon(void)

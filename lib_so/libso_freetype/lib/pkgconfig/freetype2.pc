@@ -1,0 +1,14 @@
+prefix=/opt/i.mx/learn_linux_app/lib_so/libso_freetype
+exec_prefix=/opt/i.mx/learn_linux_app/lib_so/libso_freetype
+libdir=/opt/i.mx/learn_linux_app/lib_so/libso_freetype/lib
+includedir=/opt/i.mx/learn_linux_app/lib_so/libso_freetype/include
+
+Name: FreeType 2
+URL: http://freetype.org
+Description: A free, high-quality, and portable font engine.
+Version: 20.0.14
+Requires:
+Requires.private: 
+Libs: -L${libdir} -lfreetype
+Libs.private: -lz -lpng
+Cflags: -I${includedir}/freetype2

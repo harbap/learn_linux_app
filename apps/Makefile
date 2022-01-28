@@ -4,12 +4,14 @@ CC		:= $(CROSS_COMPILE)gcc
 CXX 	:= $(CROSS_COMPILE)g++
 LD		:= $(CROSS_COMPILE)ld
 
+INCLUDE_PREFIX := /opt/i.mx/learn_linux_app/lib_so
+
 obj 	:= build
 
-CC_FLAG	:= -g -O2 -Wall -MD -I./ -I./include -I../lib/include  -I../middle/include -I/opt/i.mx/alsa-lib/include -I/opt/i.mx/learn_linux_app/lib_so/libso_jpeg/include
-CC_FLAG += -I/opt/i.mx/learn_linux_app/lib_so/libso_png/include
-LD_FLAG := -g -O2 -lpthread -lrt -lm -ljpeg -lpng -lz -L../lib -L/opt/i.mx/alsa-lib/lib -L../middle -L/opt/i.mx/learn_linux_app/lib_so/libso_jpeg/lib -L/opt/i.mx/learn_linux_app/lib_so/libso_zlib/lib
-LD_FLAG += -L/opt/i.mx/learn_linux_app/lib_so/libso_png/lib 
+CC_FLAG	:= -g -O2 -Wall -MD -I./ -I./include -I../lib/include  -I../middle/include -I/opt/i.mx/alsa-lib/include -I$(INCLUDE_PREFIX)/libso_jpeg/include
+CC_FLAG += -I$(INCLUDE_PREFIX)/libso_png/include -I$(INCLUDE_PREFIX)/libso_freetype/include/freetype2
+LD_FLAG := -g -O2 -lpthread -lrt -lm -ljpeg -lpng -lz -lfreetype -L../lib -L/opt/i.mx/alsa-lib/lib -L../middle -L$(INCLUDE_PREFIX)/libso_jpeg/lib -L$(INCLUDE_PREFIX)/libso_zlib/lib
+LD_FLAG += -L$(INCLUDE_PREFIX)/libso_png/lib -L$(INCLUDE_PREFIX)/libso_freetype/lib 
 
 ifeq ($(CROSS_COMPILE),arm-linux-gnueabihf-)
 TARGET  := linux_app_arm
