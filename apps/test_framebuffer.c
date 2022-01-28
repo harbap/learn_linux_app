@@ -357,7 +357,7 @@ int lcd_show_rgbimage(unsigned short x,unsigned short y,unsigned short w,unsigne
     if(x + w > lcd_width){
         return -1;
     }
-    if(y + h > lcd_width){
+    if(y + h > lcd_height){
         return -2;
     }
     off = y * lcd_width + x;
@@ -366,6 +366,25 @@ int lcd_show_rgbimage(unsigned short x,unsigned short y,unsigned short w,unsigne
         for(i = 0;i < w;i ++){                   //    B               G                      R
             *(unsigned int*)(pFrambuff + off + i) = imgdata[idx] | imgdata[idx+1] << 8 | imgdata[idx+2] << 16;
             idx += 3;
+        }
+        off += lcd_width;
+    }
+    return 0;
+}
+int lcd_show_bigmap(unsigned short x,unsigned short y,unsigned short w,unsigned short h,unsigned char *bitmap,unsigned int color)
+{
+    short i = 0,j = 0;
+    int off = 0;
+
+    if(x + w > lcd_width)
+        return -1;
+    if(y + h > lcd_height)
+        return -2;
+    off = y * lcd_width + x;
+    for(j = 0;j < h;j++){
+        for(i = 0;i < w;i++){
+            if(bitmap[j * w + i])
+                *(unsigned int *)(pFrambuff + off + i) = color;
         }
         off += lcd_width;
     }
@@ -644,6 +663,8 @@ static void lcd_putch(unsigned char ch)
         printf("char_code:%04lx\n",char_code);
         FT_Load_Char(face,char_code,FT_LOAD_RENDER);
         printf("top:%d left:%d w:%d h:%d ad:x=%ld y=%ld\n",slot->bitmap_top,slot->bitmap_left,slot->bitmap.width,slot->bitmap.rows,slot->advance.x,slot->advance.y);
+        lcd_show_bigmap(g_x,g_y,slot->bitmap.width,slot->bitmap.rows,slot->bitmap.buffer,front_color);
+        g_x += slot->bitmap.width;
         for(i = 0;i < slot->bitmap.rows;i++){
             for(j = 0;j < slot->bitmap.width;j++){
                 if(slot->bitmap.buffer[j + i * slot->bitmap.width])
