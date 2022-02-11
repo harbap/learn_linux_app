@@ -18,7 +18,7 @@ TARGET  := linux_app_arm
 else
 TARGET 	:= linux_app 
 endif
-SOURCE  += main.o test_fileio.o sys_info.o test_signal.o test_framebuffer.o
+SOURCE  += main.o test_fileio.o sys_info.o test_signal.o test_framebuffer.o camera.o
 
 OBJECT 	:= $(patsubst %c,%o,$(SOURCE))
 OBJ 	:= $(addprefix $(obj)/,$(OBJECT))

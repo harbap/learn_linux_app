@@ -44,10 +44,6 @@ typedef struct bgr888_color{
     unsigned char red;
 }__attribute__((packed))bgr888_t;
 
-typedef enum{
-    FONT_SONG = 0,
-    FONT_KAI = 1,
-}FontType_t;
 typedef struct{
     FontType_t type;
     unsigned char font_width;
@@ -56,13 +52,13 @@ typedef struct{
 
 static FT_Library library;
 static FT_Face face;
-static int font_width =30,font_height = 30;
+
 static Font_t fonts_g = {FONT_SONG,30,30};
 static unsigned int front_color = 0xFF0000,back_color = 0;
 static unsigned short g_x = 0,g_y = 0;
 static int framb_fd = 0;
 static short lcd_width = 0,lcd_height = 0;
-static unsigned int *pFrambuff = NULL;        //maped screen addr
+static volatile unsigned int *pFrambuff = NULL;        //maped screen addr
 static int screen_size = 0;
 
 int open_framb_dev()
@@ -110,7 +106,7 @@ void lcd_draw_point(unsigned short x,unsigned short y,unsigned int color)
     if(y >= lcd_height)
         y = lcd_height - 1;
     off =  y * lcd_width + x;
-    *(unsigned int*)(pFrambuff + off) = color;
+    *(volatile unsigned int*)(pFrambuff + off) = color;
 }
 void lcd_draw_line(unsigned short x,unsigned short y,int dir,unsigned short len,unsigned int color)
 {
@@ -127,13 +123,13 @@ void lcd_draw_line(unsigned short x,unsigned short y,int dir,unsigned short len,
         if(end >= lcd_width)
             end = lcd_width - 1;
         for( ; x <= end;x++,temp++)
-            *(unsigned int*)(pFrambuff + temp) = color;
+            *(volatile unsigned int*)(pFrambuff + temp) = color;
     }else{            //竖
         end = y + len -1;
         if(end >= lcd_height)
             end = lcd_height - 1;
         for( ;y <= end; y++,temp += lcd_width)
-            *(unsigned int*)(pFrambuff + temp) = color;
+            *(volatile unsigned int*)(pFrambuff + temp) = color;
     }
 }
 void lcd_fill(unsigned short x1,unsigned short y1,unsigned short x2,unsigned short y2,unsigned int color)
@@ -148,7 +144,7 @@ void lcd_fill(unsigned short x1,unsigned short y1,unsigned short x2,unsigned sho
     temp = y1 * lcd_width;
     for( ;y1 <= y2;y1++, temp += lcd_width){
         for(off = x1;off <= x2;off++){
-            *(unsigned int*)(pFrambuff + temp + off) = (int)color;
+            *(volatile unsigned int*)(pFrambuff + temp + off) = (int)color;
         }
     }
     
@@ -175,9 +171,10 @@ void lcd_clearn(unsigned int color)
     for(i = 0;i < lcd_height;i++){
         for(j = 0;j < lcd_width;j++){
             locat = i * lcd_width+ j;
-            *(unsigned int *)(pFrambuff + locat) = (unsigned int)color;
+            *(volatile unsigned int *)(pFrambuff + locat) = (unsigned int)color;
         }
     }
+    printf("locat=%d\n",locat);
 }
 int framb_dev_init(void)
 {
@@ -187,6 +184,7 @@ int framb_dev_init(void)
     
     //void *mmap(void *addr, size_t length, int prot, int flags,int fd, off_t offset);
     //int munmap(void *addr, size_t length);
+    printf("screen_size:%d\n",screen_size);
     pFrambuff = (unsigned int*)mmap(NULL,screen_size,PROT_READ|PROT_WRITE,MAP_SHARED,framb_fd,0);
     if((long)pFrambuff == -1){
         printf("mmap failed\n");
@@ -384,13 +382,13 @@ int lcd_show_bigmap(unsigned short x,unsigned short y,unsigned short w,unsigned 
     for(j = 0;j < h;j++){
         for(i = 0;i < w;i++){
             if(bitmap[j * w + i])
-                *(unsigned int *)(pFrambuff + off + i) = color;
+                *(volatile unsigned int *)(pFrambuff + off + i) = color;
         }
         off += lcd_width;
     }
     return 0;
 }
-int read_jpeg_image(char *fname,unsigned char **imgdata,int *width,int *height)
+int read_jpeg_image_data(char mode,char *fname,unsigned char *jpeg,unsigned int len,unsigned char **imgdata,int *width,int *height)
 {
     struct jpeg_decompress_struct cinfo;
     struct jpeg_error_mgr jerr;
@@ -401,15 +399,21 @@ int read_jpeg_image(char *fname,unsigned char **imgdata,int *width,int *height)
     printf("==============read_jpeg_imagen==================\n");
     //banding err handled function
     cinfo.err = jpeg_std_error(&jerr);
-    fp = fopen(fname,"r");
-    if(fp == NULL){
-        printf("read %s failed\n",fname);
-        return -1;
+    if(mode == 0) {             //file stream
+        fp = fopen(fname,"r");
+        if(fp == NULL){
+            printf("read %s failed\n",fname);
+            return -1;
+        }
     }
     //创建解码对象
     jpeg_create_decompress(&cinfo);
     //指定图像信息
-    jpeg_stdio_src(&cinfo,fp);
+    if(mode == 0){
+        jpeg_stdio_src(&cinfo,fp);
+    }else{      
+        jpeg_mem_src(&cinfo,jpeg,len);
+    }
     //读取图像信息
     jpeg_read_header(&cinfo,TRUE);
     printf("pic size:%d * %d \n",cinfo.image_width,cinfo.image_height);
@@ -455,12 +459,21 @@ int read_jpeg_image(char *fname,unsigned char **imgdata,int *width,int *height)
     }
     //printf("finish decompress\n");
 
-    jpeg_finish_decompress(&cinfo);
- 
+    jpeg_finish_decompress(&cinfo); 
     jpeg_destroy_decompress(&cinfo);
-    fclose(fp);
 
+    if(mode == 0)
+        fclose(fp);
+    
     return 0;
+}
+int read_jpeg_image_mem(unsigned char *jpeg,unsigned int len,unsigned char **imgdata,int *width,int *height)
+{
+  return read_jpeg_image_data(1,NULL,jpeg,len,imgdata,width,height);
+}
+int read_jpeg_image(char *fname,unsigned char **imgdata,int *width,int *height)
+{
+    return read_jpeg_image_data(0,fname,NULL,0,imgdata,width,height);
 }
 
 int lcd_display_jpeg(unsigned short x,unsigned short y,char *fname,lcd_align_t align)
@@ -472,6 +485,19 @@ int lcd_display_jpeg(unsigned short x,unsigned short y,char *fname,lcd_align_t a
         return ret;
     }
     //printf("w = %d h = %d\n",w,h);
+    if(align == align_center){
+        x = (lcd_width - w)/2;
+        y = (lcd_height - h)/2;
+    }
+    lcd_show_rgbimage(x,y,w,h,imgdata);
+    free(imgdata);
+    return 0;
+}
+int lcd_display_jpeg_mem(unsigned short x,unsigned short y,unsigned char *img,unsigned int len,lcd_align_t align)
+{
+    int w = 0,h = 0,ret = 0;
+    unsigned char *imgdata = NULL;
+    read_jpeg_image_mem(img,len,&imgdata,&w,&h);
     if(align == align_center){
         x = (lcd_width - w)/2;
         y = (lcd_height - h)/2;
@@ -629,22 +655,34 @@ void lcd_set_font_size(unsigned char width,unsigned char height)
     fonts_g.font_width = width;
     fonts_g.font_height = height;
 }
+#define FONT_DEBUG         0
 static void lcd_putch(unsigned char ch)
 {
     FT_GlyphSlot slot = face->glyph;
-    static unsigned char last_ch = 0;
-    unsigned short w = 0,h = 0;
-    unsigned long char_code = 0;
+    static unsigned long last_ch = 0;
+    unsigned short w = 0,h = 0,f_w = 0;
+    unsigned long unicode = 0,utf_code = 0;
+    unsigned short x1 = 0,y1 = 0;
     int i,j;
 
-    if(last_ch & 0x80) {
-        char_code = (last_ch << 8)|ch;
+    if((last_ch & 0x808000) == 0x808000) {
+        utf_code = (last_ch)|ch;
+        f_w = fonts_g.font_width;
+      //  printf("xx:%lx\n",((utf_code&0x003F00)>>2));
+        unicode = ((utf_code&0x0F0000)>>4) | ((utf_code&0x003F00)>>2) | (utf_code&0x00003F);
+      //  printf("last_ch 2:%lx utf_code:%lx unicode:%lx\n",last_ch,utf_code,unicode);
+        last_ch = 0;
+    }else if(last_ch & 0x800000){
+        last_ch = last_ch | (ch << 8);
+      //  printf("last_ch 1:%lx\n",last_ch);
+        return;
     }else if(ch & 0x80) {
-        last_ch = ch;
+        last_ch = ch << 16;
+      //  printf("last_ch 0:%lx\n",last_ch);
         return;
     }else{
-        w= font_width;
-        h = font_height;
+        w= fonts_g.font_width;
+        h = fonts_g.font_height;
         if(ch == '\n'){
             g_y += h;
             return;
@@ -659,12 +697,23 @@ static void lcd_putch(unsigned char ch)
                 return;
             }            
         }
-        char_code = ch;
-        printf("char_code:%04lx\n",char_code);
-        FT_Load_Char(face,char_code,FT_LOAD_RENDER);
-        printf("top:%d left:%d w:%d h:%d ad:x=%ld y=%ld\n",slot->bitmap_top,slot->bitmap_left,slot->bitmap.width,slot->bitmap.rows,slot->advance.x,slot->advance.y);
-        lcd_show_bigmap(g_x,g_y,slot->bitmap.width,slot->bitmap.rows,slot->bitmap.buffer,front_color);
-        g_x += slot->bitmap.width;
+        unicode = ch;     
+        last_ch = 0;
+        f_w = fonts_g.font_width/2;
+    }
+  //  unicode = 0x6211;  //'我'
+       // printf("char_code:%04lx\n",unicode);
+        FT_Load_Char(face,unicode,FT_LOAD_RENDER);
+     //   printf("top:%d left:%d w:%d h:%d ad:x=%ld y=%ld\n",slot->bitmap_top,slot->bitmap_left,slot->bitmap.width,slot->bitmap.rows,slot->advance.x,slot->advance.y);
+
+       
+        y1 = g_y - slot->bitmap_top + fonts_g.font_height;
+        x1 = g_x + slot->bitmap_left;
+
+      //  printf("x = %d y = %d gx=%d gy=%d\n",x1,y1,g_x,g_y);
+        lcd_show_bigmap(x1,y1,slot->bitmap.width,slot->bitmap.rows,slot->bitmap.buffer,front_color);
+        g_x += f_w;
+        #if FONT_DEBUG
         for(i = 0;i < slot->bitmap.rows;i++){
             for(j = 0;j < slot->bitmap.width;j++){
                 if(slot->bitmap.buffer[j + i * slot->bitmap.width])
@@ -675,21 +724,25 @@ static void lcd_putch(unsigned char ch)
             printf("\n");
         }
         printf("\n");
-    }
+        #endif
 }
 void lcd_gotxy(unsigned short x,unsigned short y)
 {
     g_x = x;
     g_y = y;
 }
-int lcd_dispalay_string(unsigned short x,unsigned short y,char *str)
+void lcd_getxy(unsigned short *x,unsigned short *y)
+{
+	*x = g_x;
+	*y = g_y;
+}
+int lcd_display_string(unsigned short x,unsigned short y,char *str)
 {
     int len = 0,i = 0;
 
     len = strlen(str);
     lcd_gotxy(x,y);
     for(i = 0;i < len;i++){
-        printf("%c ",str[i]);
         lcd_putch(str[i]);
     } 
 
@@ -703,16 +756,23 @@ int lcd_display(unsigned short x,unsigned short y,char *str,...)
     va_start(args, str);
     vsprintf(tmp,str,args);
     va_end(args);
-    lcd_dispalay_string(x,y,tmp);
+    lcd_display_string(x,y,tmp);
     return 0;
 }
 int lcd_printf(char *str, ...)
 {
+	char tmp[256] = {0};
+	va_list args;
+	unsigned short x = 0,y = 0;
+	
+	va_start(args,str);
+	vsprintf(tmp,str,args);
+	va_end(args);
+	lcd_getxy(&x,&y);
+	lcd_display_string(x,y,tmp);
     return 0;
 }
-
-
-
+#if 0
 void lcd_base_ui_test(void)
 {
     int i = 1,cnt = 10;
@@ -790,10 +850,13 @@ void lcd_base_ui_test(void)
     }else{
         printf("FreeType Init failed...\n");return;
     }
-    lcd_display(0,0,"abcefABCDEF");
+    lcd_display(0,0,"abcefABCDEF我是中国人，我爱自己的祖国");
+    lcd_display(0,35,"我叫黄曦沫，我的家住在福州市闽侯县上街镇");
+   //lcd_display(0,0,"我是");
     uninit_freetype();
 #endif
 }
+
 void lcd_set_bklight_alwaslon(void)
 {
     printf("set backlight alwasl on\n");
@@ -808,6 +871,24 @@ int test_frambufer_main()
     //lcd_set_bklight_alwaslon();
     lcd_base_ui_test();
     framb_dev_uinit();
+    return 0;
+}
+#endif
+int lcd_and_font_init()
+{
+    int ret = 0;
+    ret = framb_dev_init();
+    if(ret < 0){
+        printf("frambuffer device init failed \n");
+        return -1;
+    }
+    lcd_clearn(0xFFFFFF);
+    ret = init_freetype();
+    if(ret < 0){
+        printf("freetype init failed \n");
+        return -2;
+    }
+    lcd_display(100,5,"摄像头测试");
     return 0;
 }
 
