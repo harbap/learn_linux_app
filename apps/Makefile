@@ -21,7 +21,7 @@ CC_FLAG += -I$(INCLUDE_PREFIX)/libso_png/include -I$(INCLUDE_PREFIX)/libso_freet
 LD_FLAG := -g -O2 -lpthread -lrt -lm -ljpeg -lpng -lz -lfreetype -L../lib -L/opt/i.mx/alsa-lib/lib -L../middle -L$(INCLUDE_PREFIX)/libso_jpeg/lib -L$(INCLUDE_PREFIX)/libso_zlib/lib
 LD_FLAG += -L$(INCLUDE_PREFIX)/libso_png/lib -L$(INCLUDE_PREFIX)/libso_freetype/lib 
 
-SOURCE  += main.o test_fileio.o sys_info.o test_signal.o test_framebuffer.o camera.o
+SOURCE  += main.o test_fileio.o sys_info.o test_signal.o test_framebuffer.o camera.o uart.o
 
 OBJECT 	:= $(patsubst %c,%o,$(SOURCE))
 OBJ 	:= $(addprefix $(obj)/,$(OBJECT))
