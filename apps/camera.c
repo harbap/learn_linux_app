@@ -12,7 +12,8 @@
 #include <linux/videodev2.h>
 #include "test_frambuffer.h"
 
-#define VIDEO_DEV       "/dev/video1"
+#define SUPPORT_LCD      0
+#define VIDEO_DEV       "/dev/video0"
 
 typedef struct{
     unsigned short *start;
@@ -20,7 +21,7 @@ typedef struct{
 }cam_buf_info;
 
 static int camera_fd = 0;
-static const int video_width = 600,video_height = 480;
+static const int video_width = 640,video_height = 480;
 static cam_buf_info usr_buf[3];
 
 
@@ -90,13 +91,13 @@ int camera_set_format(void)
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     fmt.fmt.pix.width =video_width;
     fmt.fmt.pix.height = video_height;
-    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_JPEG;
+    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
     if(ioctl(camera_fd, VIDIOC_S_FMT,&fmt) < 0){
         printf("Failed to set video fomat !\n");
         return -1;
     }
     /*判断是否已经设置成功*/
-    if(fmt.fmt.pix.pixelformat == V4L2_PIX_FMT_JPEG){
+    if(fmt.fmt.pix.pixelformat != V4L2_PIX_FMT_MJPEG){
         printf("Error came not support JPEG format!\n");
         return -2;
     }
@@ -234,8 +235,20 @@ void read_one_frame(unsigned char *img,unsigned int *len)
     /*入队*/
     ioctl(camera_fd, VIDIOC_QBUF,&buf);
 }
+void store_one_jepg_img(unsigned char *jpeg,unsigned int len)
+{
+    FILE *fp = NULL;
+
+    fp = fopen("./camera.jpg","w+");
+    if(fp != NULL){
+        printf("write one jpeg frame!\n");
+        fwrite(jpeg,1,len,fp);
+        fclose(fp);
+    }
+}
 void lcd_show_camera_img()
 {
+#if SUPPORT_LCD    
     unsigned char *jpg = NULL;
     int jpg_size = 0;
     unsigned int jpg_len = 0;
@@ -251,6 +264,21 @@ void lcd_show_camera_img()
             usleep(30000);
         }
     }
+#else
+    unsigned char *jpg = NULL;
+    int jpg_size = 0;
+    unsigned int jpg_len = 0;
+
+    jpg_size = video_width*video_height*2;
+    camera_start_capture();
+    jpg = (unsigned char*)malloc(jpg_size);   
+    if(camera_able_read() > 0){
+        read_one_frame(jpg,&jpg_len);
+        store_one_jepg_img(jpg,jpg_len);
+        sleep(1);
+    } 
+    free(jpg);
+#endif    
 }
 void show_camera_img_test()
 {
